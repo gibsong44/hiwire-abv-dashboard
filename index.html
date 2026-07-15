@@ -255,8 +255,16 @@
   <div class="kpi-row" id="kpiRow"></div>
 
   <div class="card">
-    <h2 id="barChartTitle">Average ABV by brand</h2>
-    <p class="sub" id="barChartSub">Latest test on record for each brand, sorted high to low. Hover a bar for batch, date and replicate spread.</p>
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h2 id="barChartTitle">Average ABV by brand</h2>
+        <p class="sub" id="barChartSub">Latest test on record for each brand, sorted high to low. Hover a bar for batch, date and replicate spread.</p>
+      </div>
+      <div class="theme-toggle" id="barSortToggle" role="group" aria-label="Sort order">
+        <button type="button" data-sort-choice="value">Highest → Lowest</button>
+        <button type="button" data-sort-choice="alpha">A → Z</button>
+      </div>
+    </div>
     <div class="chart-box" style="height: 620px;">
       <canvas id="brandBarChart"></canvas>
     </div>
@@ -286,16 +294,20 @@
 
   <div class="card">
     <h2>All batch tests</h2>
-    <p class="sub">Every batch-level test result across all brands. Click a column header to sort; use the search box to filter.</p>
+    <p class="sub">Every batch-level test result across all brands. Click a column header to sort; use the search box or product dropdown to filter.</p>
     <div class="filter-row">
+      <label for="productFilter">Product</label>
+      <select id="productFilter">
+        <option value="">All products</option>
+      </select>
       <label for="tableSearch">Search</label>
-      <input type="text" id="tableSearch" placeholder="brand or batch…">
+      <input type="text" id="tableSearch" placeholder="product, brand code or batch…">
     </div>
     <div class="table-scroll">
       <table class="data-table" id="dataTable">
         <thead>
           <tr>
-            <th data-key="brand">Brand</th>
+            <th data-key="brand">Product</th>
             <th data-key="date">Date</th>
             <th data-key="batch">Batch</th>
             <th data-key="avg_abv">Avg ABV %</th>
@@ -336,8 +348,13 @@ const METRICS = {
 };
 let currentMetric = 'abv';
 
+// ---------- brand code -> product name mapping ----------
+const BRAND_NAMES = {"AHL": "Anniversary Helles", "ATL": "Attaboy Lager", "BCL": "Buena Cerveza", "BNB": "Bed of Nails", "BRC": "Berry Crush", "CID": "AMC Southern Apple", "CNI": "Cooler Nights", "DHB": "Duck Hook", "DHP": "Double Hi-Pitch", "HBD": "Hop Beard", "HDH": "Honeydew Honeysuckle", "HGHP": "High Gravity Hi-Pitch", "HHZ": "Hilly Haze", "HWL": "Hi-Wire Lager", "HZP": "Hazy Pitch", "IPA": "Hi-Pitch", "ITL": "Innertube Lager", "LGR": "Lightgrinder", "LHI": "Low & Hazy", "LLI": "Long Leaf", "LLT": "Leisure Time Light", "LPH": "Lo-Pitch", "LTL": "Leisure Time Lager", "MWC": "Mountain Water Citrus", "MWT": "Mountain Wheat", "ODY": "Odyssey IPA", "PNK": "Pink Lemonade", "PTG": "Peach Tea Gose", "SCP": "Shadowclock Pilsner", "TTA": "Tropical Tabana Ale", "VWD": "Von Watzdorf", "ZKO": "Zirkusfest"};
+function brandName(code) { return BRAND_NAMES[code] || code; }
+
 // ---------- derive brand list & latest test per brand ----------
 const brands = [...new Set(SUMMARIES.map(s => s.brand))].sort();
+const brandsByName = brands.slice().sort((a,b) => brandName(a).localeCompare(brandName(b)));
 
 function latestTestForBrand(brand) {
   const tests = SUMMARIES.filter(s => s.brand === brand).sort((a,b) => a.date.localeCompare(b.date));
@@ -370,8 +387,8 @@ function renderKpis() {
     { label: 'Batch tests logged', value: SUMMARIES.length },
     { label: 'Lab measurements', value: RECORDS.length },
     { label: `Avg ${m.shortLabel} across latest tests`, value: m.fmt(overallAvg) },
-    { label: `Highest current ${m.shortLabel}`, value: m.fmt(highest.test[m.key]), sub: highest.brand + ' · batch ' + highest.test.batch },
-    { label: `Lowest current ${m.shortLabel}`, value: m.fmt(lowest.test[m.key]), sub: lowest.brand + ' · batch ' + lowest.test.batch },
+    { label: `Highest current ${m.shortLabel}`, value: m.fmt(highest.test[m.key]), sub: brandName(highest.brand) + ' · batch ' + highest.test.batch },
+    { label: `Lowest current ${m.shortLabel}`, value: m.fmt(lowest.test[m.key]), sub: brandName(lowest.brand) + ' · batch ' + lowest.test.batch },
     { label: 'Batches with RSD > 1%', value: highRsdCount, sub: `${m.shortLabel} replicate spread — worth a QC re-check` },
   ];
 
@@ -436,21 +453,34 @@ let barChartInstance = null;
 let trendChartInstance = null;
 let rsdChartInstance = null;
 
+let currentSort = 'value';
+
+function sortedForBarChart() {
+  if (currentSort === 'alpha') {
+    return latestByBrand.slice().sort((a,b) => brandName(a.brand).localeCompare(brandName(b.brand)));
+  }
+  return latestByBrand; // already sorted high-to-low by computeLatestByBrand()
+}
+
 function renderBrandBarChart() {
   const p = palette();
   const m = METRICS[currentMetric];
   Chart.defaults.color = p.tick;
+  const chartData = sortedForBarChart();
 
   document.getElementById('barChartTitle').textContent = `Average ${m.label} by brand`;
+  document.getElementById('barChartSub').textContent = currentSort === 'alpha'
+    ? 'Latest test on record for each brand, sorted A to Z. Hover a bar for batch, date and replicate spread.'
+    : 'Latest test on record for each brand, sorted high to low. Hover a bar for batch, date and replicate spread.';
 
   if (barChartInstance) barChartInstance.destroy();
   barChartInstance = new Chart(document.getElementById('brandBarChart'), {
     type: 'bar',
     data: {
-      labels: latestByBrand.map(x => x.brand),
+      labels: chartData.map(x => brandName(x.brand)),
       datasets: [{
         label: m.label,
-        data: latestByBrand.map(x => x.test[m.key]),
+        data: chartData.map(x => x.test[m.key]),
         backgroundColor: p.bar,
         borderRadius: 4,
         borderSkipped: false,
@@ -466,11 +496,11 @@ function renderBrandBarChart() {
         tooltip: {
           callbacks: {
             title: (items) => {
-              const x = latestByBrand[items[0].dataIndex];
-              return `${x.brand} — batch ${x.test.batch}`;
+              const x = chartData[items[0].dataIndex];
+              return `${brandName(x.brand)} — batch ${x.test.batch}`;
             },
             label: (item) => {
-              const x = latestByBrand[item.dataIndex];
+              const x = chartData[item.dataIndex];
               const lines = [`${m.shortLabel}: ${m.fmt(x.test[m.key])}`, `Tested: ${x.test.date}`];
               if (x.test[m.rsdKey] !== null) lines.push(`Replicate RSD: ${x.test[m.rsdKey].toFixed(2)}%`);
               return lines;
@@ -495,11 +525,26 @@ function renderBrandBarChart() {
   });
 }
 
+// ---------- bar chart sort toggle ----------
+function setSort(sort) {
+  currentSort = sort;
+  document.querySelectorAll('#barSortToggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.sortChoice === sort);
+  });
+  renderBrandBarChart();
+}
+document.querySelectorAll('#barSortToggle button').forEach(b => {
+  b.addEventListener('click', () => setSort(b.dataset.sortChoice));
+});
+document.querySelectorAll('#barSortToggle button').forEach(b => {
+  b.classList.toggle('active', b.dataset.sortChoice === currentSort);
+});
+
 // ---------- brand detail: select ----------
 const brandSelect = document.getElementById('brandSelect');
-brands.forEach(b => {
+brandsByName.forEach(b => {
   const opt = document.createElement('option');
-  opt.value = b; opt.textContent = b;
+  opt.value = b; opt.textContent = brandName(b);
   brandSelect.appendChild(opt);
 });
 brandSelect.value = computeLatestByBrand('abv')[0].brand;
@@ -626,15 +671,27 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 let sortKey = 'date';
 let sortDir = -1;
 let searchTerm = '';
+let selectedProduct = '';
+
+const productFilter = document.getElementById('productFilter');
+brandsByName.forEach(b => {
+  const opt = document.createElement('option');
+  opt.value = b; opt.textContent = brandName(b);
+  productFilter.appendChild(opt);
+});
 
 function renderTable() {
   let rows = SUMMARIES.slice();
+  if (selectedProduct) {
+    rows = rows.filter(r => r.brand === selectedProduct);
+  }
   if (searchTerm) {
     const t = searchTerm.toLowerCase();
-    rows = rows.filter(r => r.brand.toLowerCase().includes(t) || String(r.batch).toLowerCase().includes(t));
+    rows = rows.filter(r => r.brand.toLowerCase().includes(t) || brandName(r.brand).toLowerCase().includes(t) || String(r.batch).toLowerCase().includes(t));
   }
   rows.sort((a,b) => {
-    const av = a[sortKey], bv = b[sortKey];
+    let av = a[sortKey], bv = b[sortKey];
+    if (sortKey === 'brand') { av = brandName(av); bv = brandName(bv); }
     if (av === null) return 1;
     if (bv === null) return -1;
     if (typeof av === 'string') return sortDir * av.localeCompare(bv);
@@ -643,7 +700,7 @@ function renderTable() {
   const tbody = document.getElementById('dataTableBody');
   tbody.innerHTML = rows.map(r => `
     <tr>
-      <td>${r.brand}</td>
+      <td>${brandName(r.brand)}</td>
       <td>${r.date}</td>
       <td>${r.batch}</td>
       <td>${r.avg_abv.toFixed(2)}%</td>
@@ -667,6 +724,11 @@ document.querySelectorAll('#dataTable th').forEach(th => {
     if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = key === 'brand' ? 1 : -1; }
     renderTable();
   });
+});
+
+productFilter.addEventListener('change', (e) => {
+  selectedProduct = e.target.value;
+  renderTable();
 });
 
 document.getElementById('tableSearch').addEventListener('input', (e) => {
