@@ -285,9 +285,9 @@ a { color: var(--series-1); }
 <canvas id="rsdChart"></canvas>
 </div>
 <div class="legend-note">
-<span><span class="sw" style="background:var(--good)"></span>&lt; 0.3% RSD</span>
-<span><span class="sw" style="background:var(--warning)"></span>0.3–1% RSD</span>
-<span><span class="sw" style="background:var(--critical)"></span>&gt; 1% RSD</span>
+<span><span class="sw" style="background:var(--good)"></span>&lt; 1.00% RSD</span>
+<span><span class="sw" style="background:var(--warning)"></span>1.00–2.49% RSD</span>
+<span><span class="sw" style="background:var(--critical)"></span>&ge; 2.50% RSD</span>
 </div>
 </div>
 
@@ -459,8 +459,8 @@ critical: cssVar('--critical'),
 
 function statusColorForRsd(rsd, p) {
 if (rsd === null || rsd === undefined) return p.tick;
-if (rsd < 0.3) return p.good;
-if (rsd <= 1) return p.warning;
+if (rsd < 1) return p.good;
+if (rsd < 2.5) return p.warning;
 return p.critical;
 }
 
@@ -729,8 +729,8 @@ tbody.innerHTML = rows.map(r => `
 
 function rsdBadge(rsd) {
 let cls = 'good';
-if (rsd > 1) cls = 'critical';
-else if (rsd >= 0.3) cls = 'warning';
+if (rsd >= 2.5) cls = 'critical';
+else if (rsd >= 1) cls = 'warning';
 return `<span class="badge ${cls}">${rsd.toFixed(2)}%</span>`;
 }
 
