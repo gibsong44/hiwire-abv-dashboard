@@ -369,6 +369,22 @@ return brands.map(b => ({ brand: b, test: latestTestForBrand(b) }))
 
 let latestByBrand = computeLatestByBrand(currentMetric);
 
+// ---------- average-across-all-batches per brand (used by the brand bar chart) ----------
+function computeAvgByBrand(metricKey) {
+const m = METRICS[metricKey];
+return brands.map(b => {
+const tests = SUMMARIES.filter(s => s.brand === b);
+if (!tests.length) return null;
+const avg = tests.reduce((s,t) => s + t[m.key], 0) / tests.length;
+const rsdVals = tests.map(t => t[m.rsdKey]).filter(v => v !== null && v !== undefined);
+const avgRsd = rsdVals.length ? rsdVals.reduce((s,v) => s + v, 0) / rsdVals.length : null;
+const dates = tests.map(t => t.date).sort();
+return { brand: b, avg, batchCount: tests.length, avgRsd, dateLo: dates[0], dateHi: dates[dates.length - 1] };
+}).filter(Boolean).sort((a,b) => b.avg - a.avg);
+}
+
+let avgByBrand = computeAvgByBrand(currentMetric);
+
 // ---------- KPI row ----------
 const allDates = RECORDS.map(r => r.date).sort();
 const kpiRow = document.getElementById('kpiRow');
@@ -456,21 +472,22 @@ let currentSort = 'value';
 
 function sortedForBarChart() {
 if (currentSort === 'alpha') {
-return latestByBrand.slice().sort((a,b) => brandName(a.brand).localeCompare(brandName(b.brand)));
+return avgByBrand.slice().sort((a,b) => brandName(a.brand).localeCompare(brandName(b.brand)));
 }
-return latestByBrand; // already sorted high-to-low by computeLatestByBrand()
+return avgByBrand; // already sorted high-to-low by computeAvgByBrand()
 }
 
 function renderBrandBarChart() {
 const p = palette();
 const m = METRICS[currentMetric];
 Chart.defaults.color = p.tick;
+avgByBrand = computeAvgByBrand(currentMetric);
 const chartData = sortedForBarChart();
 
 document.getElementById('barChartTitle').textContent = `Average ${m.label} by brand`;
 document.getElementById('barChartSub').textContent = currentSort === 'alpha'
-? 'Latest test on record for each brand, sorted A to Z. Hover a bar for batch, date and replicate spread.'
-: 'Latest test on record for each brand, sorted high to low. Hover a bar for batch, date and replicate spread.';
+? 'Average across all logged batches for each brand, sorted A to Z. Hover a bar for batch count and replicate spread.'
+: 'Average across all logged batches for each brand, sorted high to low. Hover a bar for batch count and replicate spread.';
 
 if (barChartInstance) barChartInstance.destroy();
 barChartInstance = new Chart(document.getElementById('brandBarChart'), {
@@ -479,7 +496,7 @@ data: {
 labels: chartData.map(x => brandName(x.brand)),
 datasets: [{
 label: m.label,
-data: chartData.map(x => x.test[m.key]),
+data: chartData.map(x => x.avg),
 backgroundColor: p.bar,
 borderRadius: 4,
 borderSkipped: false,
@@ -496,12 +513,12 @@ tooltip: {
 callbacks: {
 title: (items) => {
 const x = chartData[items[0].dataIndex];
-return `${brandName(x.brand)} — batch ${x.test.batch}`;
+return `${brandName(x.brand)} — ${x.batchCount} batch${x.batchCount === 1 ? '' : 'es'}`;
 },
 label: (item) => {
 const x = chartData[item.dataIndex];
-const lines = [`${m.shortLabel}: ${m.fmt(x.test[m.key])}`, `Tested: ${x.test.date}`];
-if (x.test[m.rsdKey] !== null) lines.push(`Replicate RSD: ${x.test[m.rsdKey].toFixed(2)}%`);
+const lines = [`Avg ${m.shortLabel}: ${m.fmt(x.avg)}`, `Tested: ${x.dateLo} to ${x.dateHi}`];
+if (x.avgRsd !== null) lines.push(`Avg replicate RSD: ${x.avgRsd.toFixed(2)}%`);
 return lines;
 }
 }
