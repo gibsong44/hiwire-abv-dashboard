@@ -342,14 +342,14 @@ const METRICS = {
 abv: {
 key: 'avg_abv', rsdKey: 'rsd_abv',
 label: 'ABV %', shortLabel: 'ABV',
-fmt: v => v.toFixed(2) + '%',
-axisTick: v => v + '%',
+fmt: v => Number(v).toFixed(2) + '%',
+axisTick: v => Number(v).toFixed(2) + '%',
 },
 calories: {
 key: 'avg_calories', rsdKey: 'rsd_calories',
 label: 'Calories / 12oz', shortLabel: 'Calories',
-fmt: v => v.toFixed(1),
-axisTick: v => v,
+fmt: v => Number(v).toFixed(2),
+axisTick: v => Number(v).toFixed(2),
 },
 };
 let currentMetric = 'abv';
@@ -643,7 +643,7 @@ const t = tests[item.dataIndex];
 const lines = [`${m.shortLabel}: ${m.fmt(t[m.key])}`];
 if (currentMetric !== 'abv' && t.avg_abv !== null) lines.push(`ABV: ${t.avg_abv.toFixed(2)}%`);
 if (t.avg_og !== null) lines.push(`OG: ${t.avg_og.toFixed(2)}°P`);
-if (currentMetric !== 'calories' && t.avg_calories !== null) lines.push(`Calories/12oz: ${t.avg_calories.toFixed(1)}`);
+if (currentMetric !== 'calories' && t.avg_calories !== null) lines.push(`Calories/12oz: ${t.avg_calories.toFixed(2)}`);
 return lines;
 }
 }
@@ -684,7 +684,7 @@ label: (item) => `RSD: ${(tests[item.dataIndex][m.rsdKey] ?? 0).toFixed(2)}%`
 },
 scales: {
 x: { grid: { display: false }, ticks: { color: p.tick, font: { size: 11 } }, border: { color: p.baseline } },
-y: { beginAtZero: true, grid: { color: p.grid }, ticks: { color: p.tick, callback: v => v + '%' }, border: { display: false } }
+y: { beginAtZero: true, grid: { color: p.grid }, ticks: { color: p.tick, callback: v => Number(v).toFixed(2) + '%' }, border: { display: false } }
 }
 }
 });
