@@ -281,7 +281,7 @@ a { color: var(--series-1); }
 <button type="button" data-sort-choice="alpha">A → Z</button>
 </div>
 </div>
-<div class="chart-box" style="height: 620px;">
+<div class="chart-box" style="height: 680px;">
 <canvas id="brandBarChart"></canvas>
 </div>
 </div>
@@ -640,7 +640,7 @@ border: { color: p.baseline }
 },
 y: {
 grid: { display: false },
-ticks: { color: p.secondary, font: { size: 11.5 } },
+ticks: { color: p.secondary, font: { size: 11.5 }, autoSkip: false },
 border: { display: false }
 }
 }
@@ -895,7 +895,7 @@ return [`Avg TPO: ${x.avg.toFixed(1)} ppb`, `Tested: ${x.dateLo} to ${x.dateHi}`
 },
 scales: {
 x: { beginAtZero: true, grid: { color: p.grid }, ticks: { color: p.tick, callback: v => v + ' ppb' }, border: { color: p.baseline } },
-y: { grid: { display: false }, ticks: { color: p.secondary, font: { size: 11.5 } }, border: { display: false } }
+y: { grid: { display: false }, ticks: { color: p.secondary, font: { size: 11.5 }, autoSkip: false }, border: { display: false } }
 }
 }
 });
