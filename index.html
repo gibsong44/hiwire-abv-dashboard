@@ -597,6 +597,9 @@ document.getElementById('barChartSub').textContent = currentSort === 'alpha'
 ? 'Average across all logged batches for each brand, sorted A to Z. Hover a bar for batch count and replicate spread.'
 : 'Average across all logged batches for each brand, sorted high to low. Hover a bar for batch count and replicate spread.';
 
+document.getElementById('brandBarChart').parentElement.style.height =
+Math.max(620, chartData.length * 24) + 'px';
+
 if (barChartInstance) barChartInstance.destroy();
 barChartInstance = new Chart(document.getElementById('brandBarChart'), {
 type: 'bar',
@@ -641,7 +644,7 @@ border: { color: p.baseline }
 },
 y: {
 grid: { display: false },
-ticks: { color: p.secondary, font: { size: 11.5 } },
+ticks: { color: p.secondary, font: { size: 11.5 }, autoSkip: false },
 border: { display: false }
 }
 }
@@ -862,6 +865,9 @@ const avg = tests.reduce((s,t) => s + t.avg_tpo_all, 0) / tests.length;
 return { brand: b, avg, batchCount: tests.length, dateLo: tests[0].date, dateHi: tests[tests.length-1].date };
 }).sort((a,b) => b.avg - a.avg);
 
+document.getElementById('oxygenBarChart').parentElement.style.height =
+Math.max(320, byBrand.length * 24) + 'px';
+
 if (oxygenBarChartInstance) oxygenBarChartInstance.destroy();
 oxygenBarChartInstance = new Chart(document.getElementById('oxygenBarChart'), {
 type: 'bar',
@@ -897,7 +903,7 @@ return [`Avg TPO: ${x.avg.toFixed(1)} ppb`, `Tested: ${x.dateLo} to ${x.dateHi}`
 },
 scales: {
 x: { beginAtZero: true, grid: { color: p.grid }, ticks: { color: p.tick, callback: v => v + ' ppb' }, border: { color: p.baseline } },
-y: { grid: { display: false }, ticks: { color: p.secondary, font: { size: 11.5 } }, border: { display: false } }
+y: { grid: { display: false }, ticks: { color: p.secondary, font: { size: 11.5 }, autoSkip: false }, border: { display: false } }
 }
 }
 });
