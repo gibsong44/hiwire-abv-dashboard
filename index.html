@@ -352,9 +352,15 @@ a { color: var(--series-1); }
 <div class="kpi-row" id="oxygenKpiRow"></div>
 
 <div class="card">
+<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">
 <div>
 <h2>Average TPO by brand</h2>
-<p class="sub">Brands with at least one dissolved-oxygen test on record, sorted high to low. Hover a bar for batch count and date range.</p>
+<p class="sub" id="oxygenBarChartSub">Brands with at least one dissolved-oxygen test on record, sorted high to low. Hover a bar for batch count and date range.</p>
+</div>
+<div class="theme-toggle" id="oxygenBarSortToggle" role="group" aria-label="Sort order">
+<button type="button" data-sort-choice="value">Highest → Lowest</button>
+<button type="button" data-sort-choice="alpha">A → Z</button>
+</div>
 </div>
 <div class="chart-box" style="height: 320px;">
 <canvas id="oxygenBarChart"></canvas>
@@ -856,14 +862,22 @@ oxygenKpiRow.appendChild(div);
 
 // ---------- oxygen bar chart (avg TPO All by brand, brands with data only) ----------
 let oxygenBarChartInstance = null;
+let currentOxygenSort = 'value';
 function renderOxygenBarChart() {
 const p = palette();
 Chart.defaults.color = p.tick;
-const byBrand = OXYGEN_BRANDS_WITH_DATA.map(b => {
+let byBrand = OXYGEN_BRANDS_WITH_DATA.map(b => {
 const tests = oxygenBatchesForBrand(b);
 const avg = tests.reduce((s,t) => s + t.avg_tpo_all, 0) / tests.length;
 return { brand: b, avg, batchCount: tests.length, dateLo: tests[0].date, dateHi: tests[tests.length-1].date };
-}).sort((a,b) => b.avg - a.avg);
+});
+byBrand = currentOxygenSort === 'alpha'
+? byBrand.sort((a,b) => brandName(a.brand).localeCompare(brandName(b.brand)))
+: byBrand.sort((a,b) => b.avg - a.avg);
+
+document.getElementById('oxygenBarChartSub').textContent = currentOxygenSort === 'alpha'
+? 'Brands with at least one dissolved-oxygen test on record, sorted A to Z. Hover a bar for batch count and date range.'
+: 'Brands with at least one dissolved-oxygen test on record, sorted high to low. Hover a bar for batch count and date range.';
 
 document.getElementById('oxygenBarChart').parentElement.style.height =
 Math.max(320, byBrand.length * 24) + 'px';
@@ -911,6 +925,21 @@ y: { grid: { display: false }, ticks: { color: p.secondary, font: { size: 11.5 }
 const chipsEl = document.getElementById('oxygenNoDataChips');
 chipsEl.innerHTML = OXYGEN_BRANDS_NO_DATA.map(b => `<span class="no-data-chip">${brandName(b)}</span>`).join('');
 }
+
+// ---------- oxygen bar chart sort toggle ----------
+function setOxygenSort(sort) {
+currentOxygenSort = sort;
+document.querySelectorAll('#oxygenBarSortToggle button').forEach(b => {
+b.classList.toggle('active', b.dataset.sortChoice === sort);
+});
+renderOxygenBarChart();
+}
+document.querySelectorAll('#oxygenBarSortToggle button').forEach(b => {
+b.addEventListener('click', () => setOxygenSort(b.dataset.sortChoice));
+});
+document.querySelectorAll('#oxygenBarSortToggle button').forEach(b => {
+b.classList.toggle('active', b.dataset.sortChoice === currentOxygenSort);
+});
 
 // ---------- oxygen brand detail ----------
 const oxygenBrandSelect = document.getElementById('oxygenBrandSelect');
