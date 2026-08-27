@@ -793,8 +793,8 @@ legend: {
 display: showTargetLines,
 labels: {
 color: p.tick,
-usePointStyle: true,
-pointStyleWidth: 24,
+boxWidth: 24,
+boxHeight: 2,
 generateLabels: (chart) => {
 const items = [];
 const seen = new Set();
@@ -804,10 +804,9 @@ seen.add(ds.label);
 items.push({
 text: ds.label,
 strokeStyle: ds.borderColor,
-fillStyle: ds.borderColor,
+fillStyle: 'transparent',
 lineWidth: ds.borderWidth,
 lineDash: ds.borderDash || [],
-pointStyle: 'line',
 datasetIndex: i,
 });
 });
