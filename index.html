@@ -793,11 +793,25 @@ legend: {
 display: showTargetLines,
 labels: {
 color: p.tick,
-boxWidth: 16,
-filter: (item, data) => {
-if (item.datasetIndex === 0) return false;
-const firstIndex = data.datasets.findIndex(ds => ds.label === item.text);
-return firstIndex === item.datasetIndex;
+usePointStyle: true,
+pointStyleWidth: 24,
+generateLabels: (chart) => {
+const items = [];
+const seen = new Set();
+chart.data.datasets.forEach((ds, i) => {
+if (i === 0 || seen.has(ds.label)) return;
+seen.add(ds.label);
+items.push({
+text: ds.label,
+strokeStyle: ds.borderColor,
+fillStyle: ds.borderColor,
+lineWidth: ds.borderWidth,
+lineDash: ds.borderDash || [],
+pointStyle: 'line',
+datasetIndex: i,
+});
+});
+return items;
 }
 }
 },
