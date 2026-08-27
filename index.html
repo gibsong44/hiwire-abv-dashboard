@@ -705,15 +705,22 @@ targetSummaryEl.innerHTML =
 }
 
 const showTargetLines = currentMetric === 'abv' && target !== undefined && tests.length > 0;
+// with only one test date there are no two points to connect, so a
+// zero-radius line renders nothing — fall back to a visible marker.
+const singlePoint = tests.length === 1;
 const refLine = (value, label, color, dash) => ({
 label,
 data: tests.map(() => value),
 borderColor: color,
+backgroundColor: color,
 borderWidth: 1.5,
 borderDash: dash,
-pointRadius: 0,
-pointHoverRadius: 0,
-pointHitRadius: 0,
+pointStyle: singlePoint ? 'rectRot' : false,
+pointRadius: singlePoint ? 5 : 0,
+pointHoverRadius: singlePoint ? 6 : 0,
+pointHitRadius: singlePoint ? 6 : 0,
+pointBackgroundColor: color,
+pointBorderColor: color,
 fill: false,
 tension: 0,
 order: 1,
