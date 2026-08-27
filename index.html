@@ -344,7 +344,7 @@ a { color: var(--series-1); }
 </div>
 </div>
 
-<footer>Source: Google Drive &rarr; ABV Data folder (36 lab test workbooks) &middot; Built 2026-08-26</footer>
+<footer>Source: Google Drive &rarr; ABV Data folder (36 lab test workbooks) &middot; Built 2026-08-27</footer>
 </div>
 
 <div id="tab-oxygen" class="tab-panel">
@@ -416,7 +416,7 @@ a { color: var(--series-1); }
 </div>
 </div>
 
-<footer>Source: Google Drive &rarr; Oxygen Data folder (36 lab test workbooks) &middot; Built 2026-08-26</footer>
+<footer>Source: Google Drive &rarr; Oxygen Data folder (36 lab test workbooks) &middot; Built 2026-08-27</footer>
 </div>
 
 </div>
@@ -704,12 +704,21 @@ targetSummaryEl.innerHTML =
 `${targetDeltaBadge(delta)} vs target`;
 }
 
-if (trendChartInstance) trendChartInstance.destroy();
-trendChartInstance = new Chart(document.getElementById('trendChart'), {
-type: 'line',
-data: {
-labels: tests.map(t => t.date),
-datasets: [{
+const showTargetLines = currentMetric === 'abv' && target !== undefined && tests.length > 0;
+const refLine = (value, label, color, dash) => ({
+label,
+data: tests.map(() => value),
+borderColor: color,
+borderWidth: 1.5,
+borderDash: dash,
+pointRadius: 0,
+pointHoverRadius: 0,
+pointHitRadius: 0,
+fill: false,
+tension: 0,
+order: 1,
+});
+const trendDatasets = [{
 label: m.label,
 data: tests.map(t => t[m.key]),
 borderColor: p.bar,
@@ -722,14 +731,40 @@ pointHoverRadius: 6,
 borderWidth: 2,
 tension: 0.15,
 fill: false,
-}]
+order: 0,
+}];
+if (showTargetLines) {
+trendDatasets.push(refLine(target, 'Target ABV %', p.critical, []));
+trendDatasets.push(refLine(target + 0.3, 'Legally Allowed Deviation', p.critical, [6, 4]));
+trendDatasets.push(refLine(target - 0.3, 'Legally Allowed Deviation', p.critical, [6, 4]));
+trendDatasets.push(refLine(target + 0.1, 'Target Overage Limit', p.good, [4, 4]));
+}
+
+if (trendChartInstance) trendChartInstance.destroy();
+trendChartInstance = new Chart(document.getElementById('trendChart'), {
+type: 'line',
+data: {
+labels: tests.map(t => t.date),
+datasets: trendDatasets
 },
 options: {
 responsive: true,
 maintainAspectRatio: false,
 plugins: {
-legend: { display: false },
+legend: {
+display: showTargetLines,
+labels: {
+color: p.tick,
+boxWidth: 16,
+filter: (item, data) => {
+if (item.datasetIndex === 0) return false;
+const firstIndex = data.datasets.findIndex(ds => ds.label === item.text);
+return firstIndex === item.datasetIndex;
+}
+}
+},
 tooltip: {
+filter: (item) => item.datasetIndex === 0,
 callbacks: {
 title: (items) => `Batch ${tests[items[0].dataIndex].batch} — ${tests[items[0].dataIndex].date}`,
 label: (item) => {
@@ -811,7 +846,7 @@ renderOxygenBrandDetail(oxygenBrandSelect.value);
 // ============================================================
 // Oxygen (DO / TPO) tab
 // ============================================================
-const OXYGEN_SUMMARIES = [{"brand": "BCB","date": "2026-08-10","batch": "3762","do_l1": 49.3,"do_l2": 48.7,"avg_tpo_l1": 67.1,"avg_tpo_l2": 82.9,"avg_tpo_all": 75.0,"tpo_l1": [67.8,72.5,55.2,72.6,67.3],"tpo_l2": [83.0,66.6,98.3,93.3,73.1]},{"brand": "BNB","date": "2026-07-31","batch": "3749","do_l1": 46.1,"do_l2": 42.3,"avg_tpo_l1": 53.0,"avg_tpo_l2": 45.0,"avg_tpo_all": 49.0,"tpo_l1": [70.5,48.3,42.4,55.5,48.1],"tpo_l2": [45.6,41.2,45.2,47.2,45.9]},{"brand": "CNI","date": "2026-06-25","batch": "3699","do_l1": 38.5,"do_l2": 40.4,"avg_tpo_l1": 55.2,"avg_tpo_l2": 60.7,"avg_tpo_all": 58.0,"tpo_l1": [46.8,53.6,48.0,69.9,57.6],"tpo_l2": [50.6,50.7,76.0,74.4,51.9]},{"brand": "CNI","date": "2026-08-07","batch": "3753","do_l1": 43.9,"do_l2": 46.1,"avg_tpo_l1": 66.6,"avg_tpo_l2": 71.2,"avg_tpo_all": 68.9,"tpo_l1": [61.1,64.7,74.2,59.6,73.5],"tpo_l2": [67.9,82.9,57.9,62.0,85.3]},{"brand": "DHB","date": "2026-08-11","batch": "3737","do_l1": 46.8,"do_l2": 48.3,"avg_tpo_l1": 72.5,"avg_tpo_l2": 71.9,"avg_tpo_all": 72.2,"tpo_l1": [93.7,56.9,85.2,51.0,75.7],"tpo_l2": [62.3,73.7,84.8,77.8,60.9]},{"brand": "DHP","date": "2026-06-23","batch": "3701","do_l1": 42.1,"do_l2": 42.7,"avg_tpo_l1": 51.5,"avg_tpo_l2": 47.3,"avg_tpo_all": 49.4,"tpo_l1": [49.9,55.8,43.3,43.5,65.1],"tpo_l2": [44.0,43.3,51.6,49.0,48.8]},{"brand": "DHP","date": "2026-08-03","batch": "3748","do_l1": 39.8,"do_l2": 37.5,"avg_tpo_l1": 52.1,"avg_tpo_l2": 53.5,"avg_tpo_all": 52.8,"tpo_l1": [49.3,49.0,47.3,55.6,59.2],"tpo_l2": [88.9,38.4,47.6,43.0,49.6]},{"brand": "HBD","date": "2026-07-30","batch": "3750","do_l1": 45.9,"do_l2": 45.9,"avg_tpo_l1": 62.4,"avg_tpo_l2": 60.0,"avg_tpo_all": 61.2,"tpo_l1": [60.6,51.5,68.7,66.7,64.4],"tpo_l2": [69.6,56.3,60.1,57.9,55.9]},{"brand": "HDH","date": "2026-08-11","batch": "3763","do_l1": 45.1,"do_l2": 46.5,"avg_tpo_l1": 67.7,"avg_tpo_l2": 79.2,"avg_tpo_all": 73.5,"tpo_l1": [54.5,59.5,71.3,83.2,70.2],"tpo_l2": [75.2,71.9,92.3,80.3,76.4]},{"brand": "HWL","date": "2026-07-21","batch": "3676","do_l1": 43.2,"do_l2": 35.3,"avg_tpo_l1": 54.6,"avg_tpo_l2": 68.7,"avg_tpo_all": 61.7,"tpo_l1": [43.5,49.3,51.4,52.6,76.2],"tpo_l2": [99.1,85.5,45.8,47.4,65.7]},{"brand": "HZP","date": "2026-06-25","batch": "3705","do_l1": 40.0,"do_l2": 38.0,"avg_tpo_l1": 62.5,"avg_tpo_l2": 58.3,"avg_tpo_all": 60.4,"tpo_l1": [45.7,49.9,78.1,73.4,65.3],"tpo_l2": [68.0,49.0,53.5,55.1,65.7]},{"brand": "HZP","date": "2026-08-06","batch": "3743","do_l1": 49.8,"do_l2": 45.6,"avg_tpo_l1": 70.4,"avg_tpo_l2": 64.8,"avg_tpo_all": 67.6,"tpo_l1": [52.8,76.4,69.9,74.1,79.0],"tpo_l2": [96.9,61.4,61.2,54.1,50.4]},{"brand": "IPA","date": "2026-06-23","batch": "3695","do_l1": 42.7,"do_l2": 40.9,"avg_tpo_l1": 54.1,"avg_tpo_l2": 55.1,"avg_tpo_all": 54.6,"tpo_l1": [44.3,57.9,51.8,66.5,50.2],"tpo_l2": [51.7,41.2,54.0,75.7,52.8]},{"brand": "IPA","date": "2026-07-22","batch": "3736","do_l1": 42.3,"do_l2": 44.8,"avg_tpo_l1": 48.4,"avg_tpo_l2": 52.6,"avg_tpo_all": 50.5,"tpo_l1": [46.8,50.9,43.1,49.4,51.8],"tpo_l2": [56.8,49.9,48.9,53.0,54.5]},{"brand": "IPA","date": "2026-07-29","batch": "3745","do_l1": 41.1,"do_l2": 42.3,"avg_tpo_l1": 59.1,"avg_tpo_l2": 94.2,"avg_tpo_all": 76.7,"tpo_l1": [51.6,51.6,70.0,58.2,64.2],"tpo_l2": [89.7,74.7,71.1,106.6,128.8]},{"brand": "IPA","date": "2026-08-06","batch": "3755","do_l1": 46.7,"do_l2": 45.8,"avg_tpo_l1": 68.7,"avg_tpo_l2": 75.3,"avg_tpo_all": 72.0,"tpo_l1": [58.2,55.8,79.9,62.5,87.1],"tpo_l2": [77.8,78.4,70.2,85.6,64.4]},{"brand": "ITL","date": "2026-07-24","batch": "3717","do_l1": 47.4,"do_l2": 48.5,"avg_tpo_l1": 68.9,"avg_tpo_l2": 59.9,"avg_tpo_all": 64.4,"tpo_l1": [63.4,55.4,79.2,58.8,87.6],"tpo_l2": [50.7,57.5,74.7,60.0,56.4]},{"brand": "LHI","date": "2026-06-24","batch": "3752","do_l1": 45.4,"do_l2": 52.8,"avg_tpo_l1": 71.9,"avg_tpo_l2": 63.9,"avg_tpo_all": 67.9,"tpo_l1": [65.2,55.0,74.9,74.4,90.2],"tpo_l2": [53.5,55.4,55.0,94.4,61.3]},{"brand": "LHI","date": "2026-08-05","batch": "3751","do_l1": 43.4,"do_l2": 46.5,"avg_tpo_l1": 69.9,"avg_tpo_l2": 62.4,"avg_tpo_all": 66.2,"tpo_l1": [53.6,51.8,79.5,66.6,98.2],"tpo_l2": [54.7,72.3,73.8,54.0,57.2]},{"brand": "LLI","date": "2026-08-12","batch": "3758","do_l1": 46.6,"do_l2": 48.7,"avg_tpo_l1": 67.7,"avg_tpo_l2": 80.0,"avg_tpo_all": 73.8,"tpo_l1": [64.0,80.7,54.1,76.7,62.9],"tpo_l2": [83.5,92.4,98.7,54.4,71.0]},{"brand": "LPH","date": "2026-07-27","batch": "3741","do_l1": 43.3,"do_l2": 42.7,"avg_tpo_l1": 62.0,"avg_tpo_l2": 75.8,"avg_tpo_all": 68.9,"tpo_l1": [46.3,58.4,72.9,58.6,73.9],"tpo_l2": [57.3,80.5,91.2,88.5,61.7]},{"brand": "LPH","date": "2026-08-19","batch": "3774","do_l1": 28.1,"do_l2": 29.4,"avg_tpo_l1": 32.4,"avg_tpo_l2": 40.8,"avg_tpo_all": 36.6,"tpo_l1": [29.3,30.2,40.7,29.9,31.7],"tpo_l2": [35.6,43.7,38.6,35.0,51.3]},{"brand": "LTL","date": "2026-07-21","batch": "3688","do_l1": 55.0,"do_l2": 46.9,"avg_tpo_l1": 75.5,"avg_tpo_l2": 79.7,"avg_tpo_all": 77.6,"tpo_l1": [98.2,53.7,62.3,60.3,102.9],"tpo_l2": [74.0,92.9,89.8,83.4,58.2]},{"brand": "MOL","date": "2026-07-23","batch": "3732","do_l1": 48.1,"do_l2": 45.8,"avg_tpo_l1": 54.7,"avg_tpo_l2": 59.4,"avg_tpo_all": 57.1,"tpo_l1": [49.7,54.2,48.4,57.8,63.2],"tpo_l2": [59.5,55.5,55.2,65.7,61.3]},{"brand": "MWC","date": "2026-08-07","batch": "3759","do_l1": 45.9,"do_l2": 43.8,"avg_tpo_l1": 62.0,"avg_tpo_l2": 64.6,"avg_tpo_all": 63.3,"tpo_l1": [81.1,49.8,66.7,53.2,59.2],"tpo_l2": [58.1,64.7,53.0,55.9,91.5]},{"brand": "MWT","date": "2026-06-24","batch": "3693","do_l1": 45.5,"do_l2": 44.6,"avg_tpo_l1": 77.3,"avg_tpo_l2": 70.6,"avg_tpo_all": 74.0,"tpo_l1": [73.8,62.8,55.2,96.6,98.2],"tpo_l2": [68.2,59.5,66.2,65.2,93.9]},{"brand": "VWD","date": "2026-08-05","batch": "3721","do_l1": 49.1,"do_l2": 48.8,"avg_tpo_l1": 78.7,"avg_tpo_l2": 81.3,"avg_tpo_all": 80.0,"tpo_l1": [74.9,101.3,85.3,79.3,52.5],"tpo_l2": [114.6,68.5,79.3,58.9,85.2]},{"brand": "ZKO","date": "2026-07-22","batch": "3683","do_l1": 41.8,"do_l2": 40.1,"avg_tpo_l1": 44.6,"avg_tpo_l2": 53.7,"avg_tpo_all": 49.2,"tpo_l1": [42.4,47.0,50.0,43.3,40.5],"tpo_l2": [77.1,53.8,43.4,50.1,44.2]},{"brand": "ZKO","date": "2026-07-27","batch": "3694","do_l1": 41.4,"do_l2": 40.4,"avg_tpo_l1": 54.6,"avg_tpo_l2": 52.5,"avg_tpo_all": 53.5,"tpo_l1": [55.8,44.1,41.8,40.9,90.4],"tpo_l2": [50.5,54.3,47.7,42.9,66.9]}];
+const OXYGEN_SUMMARIES = [{"brand": "BCB","date": "2026-08-10","batch": "3762","do_l1": 49.3,"do_l2": 48.7,"avg_tpo_l1": 67.1,"avg_tpo_l2": 82.9,"avg_tpo_all": 75.0,"tpo_l1": [67.8,72.5,55.2,72.6,67.3],"tpo_l2": [83.0,66.6,98.3,93.3,73.1]},{"brand": "BNB","date": "2026-07-31","batch": "3749","do_l1": 46.1,"do_l2": 42.3,"avg_tpo_l1": 53.0,"avg_tpo_l2": 45.0,"avg_tpo_all": 49.0,"tpo_l1": [70.5,48.3,42.4,55.5,48.1],"tpo_l2": [45.6,41.2,45.2,47.2,45.9]},{"brand": "CNI","date": "2026-06-25","batch": "3699","do_l1": 38.5,"do_l2": 40.4,"avg_tpo_l1": 55.2,"avg_tpo_l2": 60.7,"avg_tpo_all": 58.0,"tpo_l1": [46.8,53.6,48.0,69.9,57.6],"tpo_l2": [50.6,50.7,76.0,74.4,51.9]},{"brand": "CNI","date": "2026-08-07","batch": "3753","do_l1": 43.9,"do_l2": 46.1,"avg_tpo_l1": 66.6,"avg_tpo_l2": 71.2,"avg_tpo_all": 68.9,"tpo_l1": [61.1,64.7,74.2,59.6,73.5],"tpo_l2": [67.9,82.9,57.9,62.0,85.3]},{"brand": "CNI","date": "2026-08-26","batch": "3775","do_l1": 45.4,"do_l2": 48.3,"avg_tpo_l1": 63.0,"avg_tpo_l2": 64.9,"avg_tpo_all": 64.0,"tpo_l1": [64.7,53.6,56.9,58.2,81.5],"tpo_l2": [64.8,71.3,54.1,63.8,70.6]},{"brand": "DHB","date": "2026-08-11","batch": "3737","do_l1": 46.8,"do_l2": 48.3,"avg_tpo_l1": 72.5,"avg_tpo_l2": 71.9,"avg_tpo_all": 72.2,"tpo_l1": [93.7,56.9,85.2,51.0,75.7],"tpo_l2": [62.3,73.7,84.8,77.8,60.9]},{"brand": "DHP","date": "2026-06-23","batch": "3701","do_l1": 42.1,"do_l2": 42.7,"avg_tpo_l1": 51.5,"avg_tpo_l2": 47.3,"avg_tpo_all": 49.4,"tpo_l1": [49.9,55.8,43.3,43.5,65.1],"tpo_l2": [44.0,43.3,51.6,49.0,48.8]},{"brand": "DHP","date": "2026-08-03","batch": "3748","do_l1": 39.8,"do_l2": 37.5,"avg_tpo_l1": 52.1,"avg_tpo_l2": 53.5,"avg_tpo_all": 52.8,"tpo_l1": [49.3,49.0,47.3,55.6,59.2],"tpo_l2": [88.9,38.4,47.6,43.0,49.6]},{"brand": "HBD","date": "2026-07-30","batch": "3750","do_l1": 45.9,"do_l2": 45.9,"avg_tpo_l1": 62.4,"avg_tpo_l2": 60.0,"avg_tpo_all": 61.2,"tpo_l1": [60.6,51.5,68.7,66.7,64.4],"tpo_l2": [69.6,56.3,60.1,57.9,55.9]},{"brand": "HDH","date": "2026-08-11","batch": "3763","do_l1": 45.1,"do_l2": 46.5,"avg_tpo_l1": 67.7,"avg_tpo_l2": 79.2,"avg_tpo_all": 73.5,"tpo_l1": [54.5,59.5,71.3,83.2,70.2],"tpo_l2": [75.2,71.9,92.3,80.3,76.4]},{"brand": "HWL","date": "2026-07-21","batch": "3676","do_l1": 43.2,"do_l2": 35.3,"avg_tpo_l1": 54.6,"avg_tpo_l2": 68.7,"avg_tpo_all": 61.7,"tpo_l1": [43.5,49.3,51.4,52.6,76.2],"tpo_l2": [99.1,85.5,45.8,47.4,65.7]},{"brand": "HZP","date": "2026-06-25","batch": "3705","do_l1": 40.0,"do_l2": 38.0,"avg_tpo_l1": 62.5,"avg_tpo_l2": 58.3,"avg_tpo_all": 60.4,"tpo_l1": [45.7,49.9,78.1,73.4,65.3],"tpo_l2": [68.0,49.0,53.5,55.1,65.7]},{"brand": "HZP","date": "2026-08-06","batch": "3743","do_l1": 49.8,"do_l2": 45.6,"avg_tpo_l1": 70.4,"avg_tpo_l2": 64.8,"avg_tpo_all": 67.6,"tpo_l1": [52.8,76.4,69.9,74.1,79.0],"tpo_l2": [96.9,61.4,61.2,54.1,50.4]},{"brand": "IPA","date": "2026-06-23","batch": "3695","do_l1": 42.7,"do_l2": 40.9,"avg_tpo_l1": 54.1,"avg_tpo_l2": 55.1,"avg_tpo_all": 54.6,"tpo_l1": [44.3,57.9,51.8,66.5,50.2],"tpo_l2": [51.7,41.2,54.0,75.7,52.8]},{"brand": "IPA","date": "2026-07-22","batch": "3736","do_l1": 42.3,"do_l2": 44.8,"avg_tpo_l1": 48.4,"avg_tpo_l2": 52.6,"avg_tpo_all": 50.5,"tpo_l1": [46.8,50.9,43.1,49.4,51.8],"tpo_l2": [56.8,49.9,48.9,53.0,54.5]},{"brand": "IPA","date": "2026-07-29","batch": "3745","do_l1": 41.1,"do_l2": 42.3,"avg_tpo_l1": 59.1,"avg_tpo_l2": 94.2,"avg_tpo_all": 76.7,"tpo_l1": [51.6,51.6,70.0,58.2,64.2],"tpo_l2": [89.7,74.7,71.1,106.6,128.8]},{"brand": "IPA","date": "2026-08-06","batch": "3755","do_l1": 46.7,"do_l2": 45.8,"avg_tpo_l1": 68.7,"avg_tpo_l2": 75.3,"avg_tpo_all": 72.0,"tpo_l1": [58.2,55.8,79.9,62.5,87.1],"tpo_l2": [77.8,78.4,70.2,85.6,64.4]},{"brand": "ITL","date": "2026-07-24","batch": "3717","do_l1": 47.4,"do_l2": 48.5,"avg_tpo_l1": 68.9,"avg_tpo_l2": 59.9,"avg_tpo_all": 64.4,"tpo_l1": [63.4,55.4,79.2,58.8,87.6],"tpo_l2": [50.7,57.5,74.7,60.0,56.4]},{"brand": "LHI","date": "2026-06-24","batch": "3752","do_l1": 45.4,"do_l2": 52.8,"avg_tpo_l1": 71.9,"avg_tpo_l2": 63.9,"avg_tpo_all": 67.9,"tpo_l1": [65.2,55.0,74.9,74.4,90.2],"tpo_l2": [53.5,55.4,55.0,94.4,61.3]},{"brand": "LHI","date": "2026-08-05","batch": "3751","do_l1": 43.4,"do_l2": 46.5,"avg_tpo_l1": 69.9,"avg_tpo_l2": 62.4,"avg_tpo_all": 66.2,"tpo_l1": [53.6,51.8,79.5,66.6,98.2],"tpo_l2": [54.7,72.3,73.8,54.0,57.2]},{"brand": "LLI","date": "2026-08-12","batch": "3758","do_l1": 46.6,"do_l2": 48.7,"avg_tpo_l1": 67.7,"avg_tpo_l2": 80.0,"avg_tpo_all": 73.8,"tpo_l1": [64.0,80.7,54.1,76.7,62.9],"tpo_l2": [83.5,92.4,98.7,54.4,71.0]},{"brand": "LLT","date": "2026-08-26","batch": "3770","do_l1": 45.8,"do_l2": 42.8,"avg_tpo_l1": 71.5,"avg_tpo_l2": 67.1,"avg_tpo_all": 69.3,"tpo_l1": [77.5,54.3,65.0,81.3,79.3],"tpo_l2": [75.7,61.5,63.4,65.1,69.6]},{"brand": "LPH","date": "2026-07-27","batch": "3741","do_l1": 43.3,"do_l2": 42.7,"avg_tpo_l1": 62.0,"avg_tpo_l2": 75.8,"avg_tpo_all": 68.9,"tpo_l1": [46.3,58.4,72.9,58.6,73.9],"tpo_l2": [57.3,80.5,91.2,88.5,61.7]},{"brand": "LPH","date": "2026-08-19","batch": "3774","do_l1": 28.1,"do_l2": 29.4,"avg_tpo_l1": 32.4,"avg_tpo_l2": 40.8,"avg_tpo_all": 36.6,"tpo_l1": [29.3,30.2,40.7,29.9,31.7],"tpo_l2": [35.6,43.7,38.6,35.0,51.3]},{"brand": "LTL","date": "2026-07-21","batch": "3688","do_l1": 55.0,"do_l2": 46.9,"avg_tpo_l1": 75.5,"avg_tpo_l2": 79.7,"avg_tpo_all": 77.6,"tpo_l1": [98.2,53.7,62.3,60.3,102.9],"tpo_l2": [74.0,92.9,89.8,83.4,58.2]},{"brand": "MOL","date": "2026-07-23","batch": "3732","do_l1": 48.1,"do_l2": 45.8,"avg_tpo_l1": 54.7,"avg_tpo_l2": 59.4,"avg_tpo_all": 57.1,"tpo_l1": [49.7,54.2,48.4,57.8,63.2],"tpo_l2": [59.5,55.5,55.2,65.7,61.3]},{"brand": "MWC","date": "2026-08-07","batch": "3759","do_l1": 45.9,"do_l2": 43.8,"avg_tpo_l1": 62.0,"avg_tpo_l2": 64.6,"avg_tpo_all": 63.3,"tpo_l1": [81.1,49.8,66.7,53.2,59.2],"tpo_l2": [58.1,64.7,53.0,55.9,91.5]},{"brand": "MWT","date": "2026-06-24","batch": "3693","do_l1": 45.5,"do_l2": 44.6,"avg_tpo_l1": 77.3,"avg_tpo_l2": 70.6,"avg_tpo_all": 74.0,"tpo_l1": [73.8,62.8,55.2,96.6,98.2],"tpo_l2": [68.2,59.5,66.2,65.2,93.9]},{"brand": "SCP","date": "2026-08-24","batch": "3756","do_l1": 46.5,"do_l2": 47.1,"avg_tpo_l1": 63.6,"avg_tpo_l2": 67.9,"avg_tpo_all": 65.8,"tpo_l1": [77.9,53.4,62.7,64.4,59.8],"tpo_l2": [60.1,58.3,82.4,65.3,73.6]},{"brand": "VWD","date": "2026-08-05","batch": "3721","do_l1": 49.1,"do_l2": 48.8,"avg_tpo_l1": 78.7,"avg_tpo_l2": 81.3,"avg_tpo_all": 80.0,"tpo_l1": [74.9,101.3,85.3,79.3,52.5],"tpo_l2": [114.6,68.5,79.3,58.9,85.2]},{"brand": "ZKO","date": "2026-07-22","batch": "3683","do_l1": 41.8,"do_l2": 40.1,"avg_tpo_l1": 44.6,"avg_tpo_l2": 53.7,"avg_tpo_all": 49.2,"tpo_l1": [42.4,47.0,50.0,43.3,40.5],"tpo_l2": [77.1,53.8,43.4,50.1,44.2]},{"brand": "ZKO","date": "2026-07-27","batch": "3694","do_l1": 41.4,"do_l2": 40.4,"avg_tpo_l1": 54.6,"avg_tpo_l2": 52.5,"avg_tpo_all": 53.5,"tpo_l1": [55.8,44.1,41.8,40.9,90.4],"tpo_l2": [50.5,54.3,47.7,42.9,66.9]},{"brand": "ZKO","date": "2026-08-20","batch": "3734","do_l1": 41.5,"do_l2": 47.3,"avg_tpo_l1": 78.4,"avg_tpo_l2": 72.4,"avg_tpo_all": 75.4,"tpo_l1": [56.5,81.8,79.1,81.3,93.3],"tpo_l2": [58.7,62.3,70.1,83.4,87.7]}];
 
 const OXYGEN_BRANDS_WITH_DATA = [...new Set(OXYGEN_SUMMARIES.map(s => s.brand))];
 const OXYGEN_BRANDS_NO_DATA = brands.filter(b => !OXYGEN_BRANDS_WITH_DATA.includes(b));
