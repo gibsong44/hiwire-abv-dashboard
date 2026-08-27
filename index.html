@@ -557,6 +557,32 @@ b.classList.toggle('active', b.dataset.themeChoice === currentTheme());
 Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 Chart.defaults.font.size = 12;
 
+// draws horizontal reference lines across the full plot width, independent
+// of how many x-axis data points exist (so a single-batch brand still gets
+// a real line, not just a floating marker).
+Chart.register({
+id: 'hLines',
+afterDraw(chart) {
+const cfg = chart.options.plugins && chart.options.plugins.hLines;
+if (!cfg || !cfg.lines || !cfg.lines.length) return;
+const { ctx, chartArea, scales } = chart;
+const yScale = scales.y;
+if (!chartArea || !yScale) return;
+ctx.save();
+cfg.lines.forEach(line => {
+const y = yScale.getPixelForValue(line.value);
+ctx.beginPath();
+ctx.strokeStyle = line.color;
+ctx.lineWidth = line.width || 1.5;
+ctx.setLineDash(line.dash || []);
+ctx.moveTo(chartArea.left, y);
+ctx.lineTo(chartArea.right, y);
+ctx.stroke();
+});
+ctx.restore();
+}
+});
+
 function palette() {
 return {
 bar: cssVar('--series-1-450') || '#2a78d6',
@@ -705,9 +731,10 @@ targetSummaryEl.innerHTML =
 }
 
 const showTargetLines = currentMetric === 'abv' && target !== undefined && tests.length > 0;
-// with only one test date there are no two points to connect, so a
-// zero-radius line renders nothing — fall back to a visible marker.
-const singlePoint = tests.length === 1;
+// legend-only entries: the actual lines are painted by the hLines plugin
+// (afterDraw) so they span the full chart width no matter how many batch
+// tests exist — a dataset-drawn line needs 2+ points to have anything to
+// connect, which breaks for single-batch brands.
 const refLine = (value, label, color, dash) => ({
 label,
 data: tests.map(() => value),
@@ -715,12 +742,10 @@ borderColor: color,
 backgroundColor: color,
 borderWidth: 1.5,
 borderDash: dash,
-pointStyle: singlePoint ? 'rectRot' : false,
-pointRadius: singlePoint ? 5 : 0,
-pointHoverRadius: singlePoint ? 6 : 0,
-pointHitRadius: singlePoint ? 6 : 0,
-pointBackgroundColor: color,
-pointBorderColor: color,
+showLine: false,
+pointRadius: 0,
+pointHoverRadius: 0,
+pointHitRadius: 0,
 fill: false,
 tension: 0,
 order: 1,
@@ -740,11 +765,16 @@ tension: 0.15,
 fill: false,
 order: 0,
 }];
+const hLines = [];
 if (showTargetLines) {
 trendDatasets.push(refLine(target, 'Target ABV %', p.good, []));
 trendDatasets.push(refLine(target + 0.3, 'Legally Allowed Deviation', p.critical, [6, 4]));
 trendDatasets.push(refLine(target - 0.3, 'Legally Allowed Deviation', p.critical, [6, 4]));
 trendDatasets.push(refLine(target + 0.1, 'Target Overage Limit', p.good, [4, 4]));
+hLines.push({ value: target, color: p.good, dash: [], width: 2 });
+hLines.push({ value: target + 0.3, color: p.critical, dash: [6, 4], width: 1.5 });
+hLines.push({ value: target - 0.3, color: p.critical, dash: [6, 4], width: 1.5 });
+hLines.push({ value: target + 0.1, color: p.good, dash: [4, 4], width: 1.5 });
 }
 
 if (trendChartInstance) trendChartInstance.destroy();
@@ -758,6 +788,7 @@ options: {
 responsive: true,
 maintainAspectRatio: false,
 plugins: {
+hLines: { lines: hLines },
 legend: {
 display: showTargetLines,
 labels: {
