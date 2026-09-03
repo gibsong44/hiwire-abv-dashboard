@@ -359,7 +359,7 @@ a { color: var(--series-1); }
 </div>
 </div>
 
-<footer>Source: Google Drive &rarr; ABV Data folder (36 lab test workbooks) &middot; Built 2026-09-02</footer>
+<footer>Source: Google Drive &rarr; ABV Data folder (36 lab test workbooks) &middot; Built 2026-09-03</footer>
 </div>
 
 <div id="tab-oxygen" class="tab-panel">
@@ -433,7 +433,7 @@ a { color: var(--series-1); }
 </div>
 </div>
 
-<footer>Source: Google Drive &rarr; Oxygen Data folder (36 lab test workbooks) &middot; Built 2026-09-02</footer>
+<footer>Source: Google Drive &rarr; Oxygen Data folder (36 lab test workbooks) &middot; Built 2026-09-03</footer>
 </div>
 
 </div>
@@ -463,11 +463,11 @@ axisTick: v => Number(v).toFixed(2),
 let currentMetric = 'abv';
 
 // ---------- brand code -> product name mapping ----------
-const BRAND_NAMES = {};
+const BRAND_NAMES = {"AHL": "Anniversary Helles","ATL": "Attaboy Lager","BCB": "Boone Creek Blonde","BCL": "Buena Cerveza","BNB": "Bed of Nails","BRC": "Berry Crush","CID": "AMC Southern Apple","CNI": "Cooler Nights","DHB": "Duck Hook","DHP": "Double Hi-Pitch","HBD": "Hop Beard","HDH": "Honeydew Honeysuckle","HGHP": "High Gravity Hi-Pitch","HHZ": "Hilly Haze","HWL": "Hi-Wire Lager","HZP": "Hazy Pitch","IPA": "Hi-Pitch","ITL": "Innertube Lager","LGR": "Lightgrinder","LHI": "Low & Hazy","LLI": "Long Leaf","LLT": "Leisure Time Light","LPH": "Lo-Pitch","LTL": "Leisure Time Lager","MOL": "Man of Law","MWC": "Mountain Water Citrus","MWT": "Mountain Wheat","ODY": "Odyssey IPA","PNK": "Pink Lemonade","PTG": "Peach Tea Gose","SCP": "Shadowclock Pilsner","SDY": "Super Dry IPA","SWX": "Surf Wax IPA","TTA": "Tropical Tabana Ale","VWD": "Von Watzdorf","ZKO": "Zirkusfest"};
 function brandName(code) { return BRAND_NAMES[code] || code; }
 
 // ---------- brand code -> target ABV % mapping ----------
-const TARGET_ABV = {};
+const TARGET_ABV = {"AHL": 5.1,"ATL": 4.1,"BCB": 4.9,"BCL": 4.5,"BNB": 5.5,"BRC": 5.0,"CID": 5.0,"CNI": 6.5,"DHB": 4.3,"DHP": 9.0,"HBD": 7.0,"HDH": 5.3,"HGHP": 6.7,"HHZ": 6.6,"HWL": 4.6,"HZP": 7.2,"IPA": 6.7,"ITL": 3.5,"LGR": 5.8,"LHI": 4.1,"LLI": 7.1,"LLT": 4.1,"LPH": 5.5,"LTL": 5.0,"MOL": 6.4,"MWC": 4.5,"MWT": 5.3,"ODY": 6.5,"PNK": 4.2,"PTG": 4.1,"SCP": 5.5,"SDY": 7.0,"SWX": 6.8,"TTA": 9.6,"VWD": 5.3,"ZKO": 6.0};
 
 // ---------- ABV deviation from target: shared coloring + formatting ----------
 function targetDeltaClass(absDelta) {
